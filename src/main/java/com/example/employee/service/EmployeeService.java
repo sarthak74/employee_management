@@ -3,9 +3,8 @@ package com.example.employee.service;
 import java.util.List;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
 
 import com.example.employee.config.RabbitmqConfig;
@@ -78,22 +77,10 @@ public class EmployeeService {
         return "No employee with id: " + id;
     }
 
-    @Autowired
-    RabbitTemplate rabbitTemplate;
-
     @RabbitListener(queues = RabbitmqConfig.QueueName)
-    public Employee consumeQueue(Employee employee){
-        System.out.println("msg recieved: " + employee);
-        Employee updatedEmployee = updateEmployee(employee);
-        System.out.println("updatedEmp: " + updatedEmployee);
-        return updatedEmployee;
-        // Message response = MessageBuilder.withBody(("received: "+new String(employee.getBody())).getBytes()).build();
-        // CorrelationData correlationData = new CorrelationData(employee.getMessageProperties().getCorrelationId());
-        // System.out.println("corr data: " + correlationData);
-        // rabbitTemplate.convertAndSend(RabbitmqConfig.Exchange, RabbitmqConfig.ReplyRoutingKey, updatedEmployee);
-        // System.out.println("consumer result: " + result);
-        // Employee emp = (Employee)employee;
-        // System.out.println("des: " + emp);
+    public Employee updateEmployeeListener(Employee employee) {
+        System.out.println("[.] Got request: " + employee);
+        return updateEmployee(employee);
     }
-    
+
 }

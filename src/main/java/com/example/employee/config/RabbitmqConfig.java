@@ -1,9 +1,13 @@
 package com.example.employee.config;
 
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -13,15 +17,29 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+
+import lombok.Value;
+
 
 @EnableScheduling
 public class RabbitmqConfig {
-    public static final String QueueName = "employee_queue_1";
-    public static final String ReplyQueue = "employee_reply_queue_1";
+    
+
+
+    public static final String QueueName = "request";
+    public static final String ReplyQueue = "reply";
     public static final String Exchange = "employee_exchange_1";
     public static final String RoutingKey = "employee_routingKey_1";
     public static final String ReplyRoutingKey = "employee_reply_routingKey_1";
+    private String username = "guest";
+    private String password = "guest";
+    private String host = "localhost";
+    private int port = 5672;
 
+
+    
     @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory){
         return new RabbitAdmin(connectionFactory);
@@ -32,10 +50,10 @@ public class RabbitmqConfig {
         return new Queue(QueueName);
     }
 
-    @Bean
-    Queue replyQueue() {
-        return new Queue(ReplyQueue);
-    }
+    // @Bean
+    // Queue replyQueue() {
+    //     return new Queue(ReplyQueue);
+    // }
 
     @Bean
     public TopicExchange exchange(){
@@ -47,10 +65,10 @@ public class RabbitmqConfig {
         return BindingBuilder.bind(queue).to(exchange).with(RoutingKey);
     }
 
-    @Bean
-    public Binding replyBinding() {
-        return BindingBuilder.bind(replyQueue()).to(exchange()).with(ReplyRoutingKey);
-    }
+    // @Bean
+    // public Binding replyBinding() {
+    //     return BindingBuilder.bind(replyQueue()).to(exchange()).with(ReplyRoutingKey);
+    // }
 
     @Bean
     public MessageConverter converter(){
@@ -61,29 +79,43 @@ public class RabbitmqConfig {
     public RabbitTemplate template(ConnectionFactory connectionFactory) {
         
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        
         rabbitTemplate.setMessageConverter(converter());
-        rabbitTemplate.setReplyAddress(ReplyQueue);
+        rabbitTemplate.setReceiveTimeout(10000);
+        // rabbitTemplate.setReplyAddress(ReplyQueue);
+        // rabbitTemplate.setReplyTimeout(10000);
         return rabbitTemplate;
     }
 
-    @Bean
-    SimpleMessageListenerContainer container(ConnectionFactory connectionFactory) {
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    
+    @Bean CachingConnectionFactory connectionFactory(){
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
         
-        container.setConnectionFactory(connectionFactory);
-        container.setQueueNames(QueueName);
-        container.setMessageListener(template(connectionFactory));
-        return container;
+        connectionFactory.setUsername(username);
+        connectionFactory.setPassword(password);
+        connectionFactory.setHost(host);
+        connectionFactory.setPort(port);
+        
+        return connectionFactory;
     }
 
     @Bean
-    SimpleMessageListenerContainer replyContainer(ConnectionFactory connectionFactory) {
+    SimpleMessageListenerContainer container() {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         
-        container.setConnectionFactory(connectionFactory);
-        container.setQueueNames(ReplyQueue);
-        container.setMessageListener(template(connectionFactory));
+        container.setConnectionFactory(connectionFactory());
+        container.setQueues(queue());
+        container.setMessageListener(template(connectionFactory()));
         return container;
     }
+
+    // @Bean
+    // SimpleMessageListenerContainer replyContainer() {
+    //     SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    //     container.setConnectionFactory(connectionFactory());
+    //     container.setQueues(replyQueue());
+    //     container.setMessageListener(template(connectionFactory()));
+    //     return container;
+    // }
+
+
 }

@@ -1,14 +1,21 @@
 package com.example.employee.controller;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+
+import javax.swing.text.html.HTML;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.employee.config.RabbitmqConfig;
+import com.example.employee.config.RabbitmqRPCClient;
 import com.example.employee.entity.Employee;
 
 import com.example.employee.service.EmployeeService;
@@ -77,28 +85,17 @@ public class EmployeeController {
         return new ResponseEntity<String>(status, HttpStatus.OK);
     }
 
+    
     @PostMapping("/queue")
-    public Employee queue(@RequestBody Employee employee){
-        System.out.println("queuing: " + employee.toString());
-        Message newMessage = MessageBuilder.withBody(employee.toString().getBytes()).build();
-        Employee newEmployee =  (Employee)template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, employee);
-        // String response = "";
-        System.out.println("newEmp: " + newEmployee);
-        // if(result != null){
-        //     String id = newMessage.getMessageProperties().getCorrelationId();
-
-        //     System.out.println("rec id:" + id);
-        //     HashMap<String, Object> headers = (HashMap<String, Object>) result.getMessageProperties().getHeaders();
-        //     System.out.println("heads: " + headers);
-        //     String msgId = (String) headers.get("spring_returned_message_correlation");
+    public ResponseEntity<Employee> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
+        try {
+            System.out.println("[x] Requesting: " + employee);
+            Employee updatedEmployee = (Employee) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, employee);
             
-        //     if(msgId.equals(id)){
-        //         response = new String(result.getBody());
-        //     }
-
-        // }
-        // System.out.println(("resp: " + response));
-
-        return newEmployee;
+            return new ResponseEntity<Employee>(updatedEmployee, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
