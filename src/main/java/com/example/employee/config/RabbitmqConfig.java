@@ -1,8 +1,5 @@
 package com.example.employee.config;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -16,12 +13,6 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-
-import lombok.Value;
-
 
 @EnableScheduling
 public class RabbitmqConfig {
