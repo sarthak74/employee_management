@@ -16,9 +16,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 public class RabbitmqConfig {
-    
-
-
     public static final String QueueName = "request";
     public static final String ReplyQueue = "reply";
     public static final String Exchange = "employee_exchange_1";
