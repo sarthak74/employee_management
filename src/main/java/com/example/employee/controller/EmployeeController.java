@@ -34,7 +34,7 @@ public class EmployeeController {
 
     @PostMapping("/addEmployee")
     public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee){
-        
+        employee.setIsDeleted(false);
         Employee addedEmployee = service.save(employee);
         return new ResponseEntity<Employee>(addedEmployee, HttpStatus.OK);
     }

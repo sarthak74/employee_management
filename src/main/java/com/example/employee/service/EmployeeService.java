@@ -33,7 +33,7 @@ public class EmployeeService {
     public Employee getEmp(String id){
         Employee employee = repo.findById(id).get();
         if(employee == null) return null;
-        if(employee.isDeleted()) return null;
+        if(employee.getIsDeleted()) return null;
         return employee;
     }
 
@@ -44,7 +44,7 @@ public class EmployeeService {
             return null;
         }
 
-        if(prev_employee.isDeleted() == true) {
+        if(prev_employee.getIsDeleted() == true) {
             return null;
         }
 
@@ -60,17 +60,17 @@ public class EmployeeService {
     public String deleteEmp(String id){
         Employee prev_employee = repo.findById(id).get();
         if(prev_employee != null){
-            if(prev_employee.isDeleted() == true){
+            if(prev_employee.getIsDeleted() == true){
                 return "No employee with id: " + id;
             }
-            prev_employee.setDeleted(true);
+            prev_employee.setIsDeleted(true);
             repo.save(prev_employee);
             return "Employee removed with id: " + id;
         }
         
         return "No employee with id: " + id;
     }
-    // separate listener class
+
     @RabbitListener(queues = RabbitmqConfig.QueueName)
     public Employee updateEmployeeListener(Employee employee) throws Exception {
         try {
@@ -83,5 +83,4 @@ public class EmployeeService {
             return null;
         }
     }
-
 }

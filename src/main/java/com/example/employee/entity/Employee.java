@@ -21,12 +21,12 @@ import lombok.NoArgsConstructor;
 public class Employee implements Serializable {
     
     @Id
-    @Column(name="id", length=36, updatable=false)
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(
             name = "UUID",
             strategy = "org.hibernate.id.UUIDGenerator"
     )
+    @Column(name="id", length=36, updatable=false)
     private String id;
     //uuid
 
@@ -54,7 +54,7 @@ public class Employee implements Serializable {
     @Column(name = "updateAt")
     private Timestamp updatedAt;
 
-    private boolean isDeleted = false;
+    private Boolean isDeleted = false;
 
     @Override
     public String toString() {
