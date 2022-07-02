@@ -1,5 +1,4 @@
 package com.example.employee.controller;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -20,6 +19,8 @@ import com.example.employee.config.RabbitmqConfig;
 import com.example.employee.entity.Employee;
 
 import com.example.employee.service.EmployeeService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 
 @RestController
@@ -33,6 +34,7 @@ public class EmployeeController {
 
     @PostMapping("/addEmployee")
     public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee){
+        
         Employee addedEmployee = service.save(employee);
         return new ResponseEntity<Employee>(addedEmployee, HttpStatus.OK);
     }
@@ -44,9 +46,18 @@ public class EmployeeController {
     }
 
     @GetMapping("/getEmployee/{id}")
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable int id){
-        Employee employee = service.getEmp(id);
-        return new ResponseEntity<Employee>(employee, HttpStatus.OK);
+    public ResponseEntity<Object> getEmployeeById(@PathVariable String id) throws JsonMappingException, JsonProcessingException{
+        try {    
+            Employee employee = service.getEmp(id);
+            if(employee == null){
+                return new ResponseEntity<Object>("No employee with id: " + id, HttpStatus.BAD_REQUEST);
+            }
+            
+            return new ResponseEntity<Object>(employee, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<Object>("Internal Server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/getAllEmployees")
@@ -56,36 +67,43 @@ public class EmployeeController {
     }
 
     @PutMapping("/updateEmployee")
-    public ResponseEntity<String> updateEmployee(@RequestBody Employee employee){
-        System.out.println("updating employee: " + employee);
-        Employee prev_employee = service.getEmp(employee.getId());
-        System.out.println("prev_emp: "+ prev_employee);
-        if(prev_employee == null){
-            return new ResponseEntity<String>("No employee with id: " + employee.getId(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Object> updateEmployee(@RequestBody Employee employee) throws JsonMappingException, JsonProcessingException{
+        try {
+            
+        
+            Employee updatedEmployee = service.updateEmployee(employee);
+            if(updatedEmployee == null){
+                return new ResponseEntity<Object>("No employee with id: " + employee.getId(), HttpStatus.BAD_REQUEST);    
+            }
+            
+            return new ResponseEntity<Object>(updatedEmployee, HttpStatus.OK);
+        } catch(Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<Object>("Internal Server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        
-        template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, employee);
-        
-        return new ResponseEntity<String>("Employee updated successfully", HttpStatus.OK);
     }
 
     @DeleteMapping("/deleteEmployee/{id}")
-    public ResponseEntity<String> deleteEmployee(@PathVariable int id){
+    public ResponseEntity<String> deleteEmployee(@PathVariable String id){
         String status = service.deleteEmp(id);
         return new ResponseEntity<String>(status, HttpStatus.OK);
     }
 
     
-    @PostMapping("/queue")
-    public ResponseEntity<Employee> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
+    @PostMapping("/updateQueue")
+    public ResponseEntity<Object> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
         try {
             System.out.println("[x] Requesting: " + employee);
             Employee updatedEmployee = (Employee) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, employee);
+            System.out.println("updated emp: " + updatedEmployee);
+            if(updatedEmployee == null){
+                return new ResponseEntity<Object>("Bad data format or employee does not exist with given id: " + employee.getId(), HttpStatus.BAD_REQUEST);
+            }
             
-            return new ResponseEntity<Employee>(updatedEmployee, HttpStatus.OK);
+            return new ResponseEntity<Object>(updatedEmployee, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -4,11 +4,12 @@ import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
 
-
 import javax.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -32,15 +33,19 @@ public class EmployeeExceptionController {
         return new ResponseEntity<String>("Incorrect Input fields: " + fields, HttpStatus.BAD_REQUEST);
     }
 
-    // @ExceptionHandler(TransactionSystemException.class)
-    // public ResponseEntity<String> handleIncorrectConstraints(TransactionSystemException transactionSystemException) {
-    //     System.out.println("trans exc");
-    //     System.out.println(transactionSystemException.getMostSpecificCause());
+    @ExceptionHandler(JpaSystemException.class)
+    public ResponseEntity<String> handleJPAExceptions(JpaSystemException jpaSystemException){
         
-    //     // System.out.println(transactionSystemException.getLocalizedMessage());
-    //     // System.out.println(transactionSystemException.getOriginalException());
-        
-    //     return new ResponseEntity<String>("Incorrect values for some fields", HttpStatus.BAD_REQUEST);
-    // }
+        return new ResponseEntity<String>("Bad data format", HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<String> handleTransactionSystemExceptions(TransactionSystemException transactionSystemException) {
+        System.out.println("tran sys exc: " + transactionSystemException);
+        System.out.println("tran sys exc getm: " + transactionSystemException.getMessage());
+        System.out.println("tran sys exc getLm: " + transactionSystemException.getLocalizedMessage());
+        System.out.println("tran sys exc getC: " + transactionSystemException.getCause());
+        return new ResponseEntity<String>("Incorrect data format", HttpStatus.BAD_REQUEST);
+    }
 
 }

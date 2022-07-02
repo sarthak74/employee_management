@@ -22,8 +22,7 @@ public class EmployeeService {
     }
 
     public List<Employee> saveAll(List<Employee> employees){
-        
-        System.out.println("empall service: " + employees);
+
         return repo.saveAll(employees);
     }
 
@@ -31,7 +30,7 @@ public class EmployeeService {
         return repo.findAllEmployees();
     }
 
-    public Employee getEmp(int id){
+    public Employee getEmp(String id){
         Employee employee = repo.findById(id).get();
         if(employee == null) return null;
         if(employee.isDeleted()) return null;
@@ -39,7 +38,6 @@ public class EmployeeService {
     }
 
     public Employee updateEmployee(Employee employee){
-        System.out.println("updating employee" + employee);
         Employee prev_employee = repo.findById(employee.getId()).get();
 
         if(prev_employee == null){
@@ -47,7 +45,6 @@ public class EmployeeService {
         }
 
         if(prev_employee.isDeleted() == true) {
-            System.out.println("User already deleted");
             return null;
         }
 
@@ -60,14 +57,12 @@ public class EmployeeService {
 
     }
 
-    public String deleteEmp(int id){
+    public String deleteEmp(String id){
         Employee prev_employee = repo.findById(id).get();
         if(prev_employee != null){
             if(prev_employee.isDeleted() == true){
-                System.out.println(("user already deleted"));
                 return "No employee with id: " + id;
             }
-            System.out.println("deleting emp: " + prev_employee);
             prev_employee.setDeleted(true);
             repo.save(prev_employee);
             return "Employee removed with id: " + id;
@@ -75,11 +70,18 @@ public class EmployeeService {
         
         return "No employee with id: " + id;
     }
-
+    // separate listener class
     @RabbitListener(queues = RabbitmqConfig.QueueName)
-    public Employee updateEmployeeListener(Employee employee) {
-        System.out.println("[.] Got request: " + employee);
-        return updateEmployee(employee);
+    public Employee updateEmployeeListener(Employee employee) throws Exception {
+        try {
+            System.out.println("[.] Got request: " + employee);
+            Employee updatedEmployee = updateEmployee(employee);
+            return updatedEmployee;
+     
+        } catch (Exception e) {
+            e.getStackTrace();
+            return null;
+        }
     }
 
 }

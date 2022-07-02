@@ -41,11 +41,6 @@ public class RabbitmqConfig {
         return new Queue(QueueName);
     }
 
-    // @Bean
-    // Queue replyQueue() {
-    //     return new Queue(ReplyQueue);
-    // }
-
     @Bean
     public TopicExchange exchange(){
         return new TopicExchange(Exchange);
@@ -55,11 +50,6 @@ public class RabbitmqConfig {
     public Binding binding(Queue queue, TopicExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(RoutingKey);
     }
-
-    // @Bean
-    // public Binding replyBinding() {
-    //     return BindingBuilder.bind(replyQueue()).to(exchange()).with(ReplyRoutingKey);
-    // }
 
     @Bean
     public MessageConverter converter(){
@@ -98,15 +88,5 @@ public class RabbitmqConfig {
         container.setMessageListener(template(connectionFactory()));
         return container;
     }
-
-    // @Bean
-    // SimpleMessageListenerContainer replyContainer() {
-    //     SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-    //     container.setConnectionFactory(connectionFactory());
-    //     container.setQueues(replyQueue());
-    //     container.setMessageListener(template(connectionFactory()));
-    //     return container;
-    // }
-
 
 }
