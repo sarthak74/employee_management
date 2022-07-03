@@ -2,6 +2,8 @@ package com.example.employee.controller;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -94,13 +96,16 @@ public class EmployeeController {
     public ResponseEntity<Object> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
         try {
             System.out.println("[x] Requesting: " + employee);
-            Employee updatedEmployee = (Employee) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, employee);
-            System.out.println("updated emp: " + updatedEmployee);
+            ObjectMapper mapper = new ObjectMapper();
+            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(employee);
+            String updatedEmployee = (String) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, json);
+            Employee updatedEmployeeObject = mapper.readValue(updatedEmployee, Employee.class);
+            System.out.println("updated emp: " + updatedEmployeeObject);
             if(updatedEmployee == null){
                 return new ResponseEntity<Object>("Bad data format or employee does not exist with given id: " + employee.getId(), HttpStatus.BAD_REQUEST);
             }
             
-            return new ResponseEntity<Object>(updatedEmployee, HttpStatus.OK);
+            return new ResponseEntity<Object>(updatedEmployeeObject, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);

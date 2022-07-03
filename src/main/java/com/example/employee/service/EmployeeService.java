@@ -71,16 +71,16 @@ public class EmployeeService {
         return "No employee with id: " + id;
     }
 
-    @RabbitListener(queues = RabbitmqConfig.QueueName)
-    public Employee updateEmployeeListener(Employee employee) throws Exception {
-        try {
-            System.out.println("[.] Got request: " + employee);
-            Employee updatedEmployee = updateEmployee(employee);
-            return updatedEmployee;
+    // @RabbitListener(queues = RabbitmqConfig.QueueName)
+    // public Employee updateEmployeeListener(Employee employee) throws Exception {
+    //     try {
+    //         System.out.println("[.] Got request: " + employee);
+    //         Employee updatedEmployee = updateEmployee(employee);
+    //         return updatedEmployee;
      
-        } catch (Exception e) {
-            e.getStackTrace();
-            return null;
-        }
-    }
+    //     } catch (Exception e) {
+    //         e.getStackTrace();
+    //         return null;
+    //     }
+    // }
 }

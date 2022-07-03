@@ -65,7 +65,8 @@ public class RabbitmqConfig {
     }
 
     
-    @Bean CachingConnectionFactory connectionFactory(){
+    @Bean
+    CachingConnectionFactory connectionFactory(){
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
         
         connectionFactory.setUsername(username);
