@@ -59,8 +59,6 @@ public class RabbitmqConfig {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(converter());
         rabbitTemplate.setReceiveTimeout(10000);
-        // rabbitTemplate.setReplyAddress(ReplyQueue);
-        // rabbitTemplate.setReplyTimeout(10000);
         return rabbitTemplate;
     }
 

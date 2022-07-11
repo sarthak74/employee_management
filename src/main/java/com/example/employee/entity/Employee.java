@@ -14,6 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.redis.core.RedisHash;
 
 @Entity
 @Data
@@ -54,12 +55,12 @@ public class Employee implements Serializable {
     @Column(name = "updateAt")
     private Timestamp updatedAt;
 
-    private Boolean isDeleted = false;
+    private boolean isDeleted = false;
 
     @Override
     public String toString() {
         return "Employee [age=" + age + ", contact=" + contact + ", createdAt=" + createdAt + ", id=" + id
-                + ", isDeleted=" + isDeleted + ", name=" + name + ", pod=" + pod + ", updatedAt=" + updatedAt + "]";
+                + ", name=" + name + ", pod=" + pod + ", updatedAt=" + updatedAt + "]";
     }
 
     

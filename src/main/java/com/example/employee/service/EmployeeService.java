@@ -2,49 +2,62 @@ package com.example.employee.service;
 
 import java.util.List;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
-import com.example.employee.config.RabbitmqConfig;
 import com.example.employee.entity.Employee;
 import com.example.employee.repository.EmployeeRepository;
 
 @Service
+@EnableCaching
 public class EmployeeService {
 
     @Autowired
     private EmployeeRepository repo;
 
+    private String REDIS_HASH = "REDIS_KEY";
+
     public Employee save(Employee employee){
         System.out.println("emp service: " + employee);
+
         return repo.save(employee);
     }
 
     public List<Employee> saveAll(List<Employee> employees){
-
         return repo.saveAll(employees);
     }
 
+
+    @Cacheable(value = "employee")
     public List<Employee> getAll(){
+        System.out.println("get all emps");
         return repo.findAllEmployees();
     }
 
+    @Cacheable(value = "employee", key = "#id", condition = "#result != null")
     public Employee getEmp(String id){
+        System.out.println("get emp by id: " + id);
         Employee employee = repo.findById(id).get();
         if(employee == null) return null;
-        if(employee.getIsDeleted()) return null;
+        if(employee.isDeleted()) return null;
         return employee;
     }
 
+    @CachePut(value = "employee", key = "#employee.getId()")
     public Employee updateEmployee(Employee employee){
+        System.out.println("updating emp id: " + employee.getId());
         Employee prev_employee = repo.findById(employee.getId()).get();
 
         if(prev_employee == null){
             return null;
         }
 
-        if(prev_employee.getIsDeleted() == true) {
+        if(prev_employee.isDeleted() == true) {
             return null;
         }
 
@@ -57,30 +70,18 @@ public class EmployeeService {
 
     }
 
-    public String deleteEmp(String id){
+    @CacheEvict(value = "employee", key = "#id")
+    public Boolean deleteEmp(String id){
         Employee prev_employee = repo.findById(id).get();
         if(prev_employee != null){
-            if(prev_employee.getIsDeleted() == true){
-                return "No employee with id: " + id;
+            if(prev_employee.isDeleted() == true){
+                return false;
             }
-            prev_employee.setIsDeleted(true);
+            prev_employee.setDeleted(true);
             repo.save(prev_employee);
-            return "Employee removed with id: " + id;
+            return true;
         }
         
-        return "No employee with id: " + id;
+        return false;
     }
-
-    // @RabbitListener(queues = RabbitmqConfig.QueueName)
-    // public Employee updateEmployeeListener(Employee employee) throws Exception {
-    //     try {
-    //         System.out.println("[.] Got request: " + employee);
-    //         Employee updatedEmployee = updateEmployee(employee);
-    //         return updatedEmployee;
-     
-    //     } catch (Exception e) {
-    //         e.getStackTrace();
-    //         return null;
-    //     }
-    // }
 }

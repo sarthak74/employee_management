@@ -39,13 +39,4 @@ public class EmployeeExceptionController {
         return new ResponseEntity<String>("Bad data format", HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(TransactionSystemException.class)
-    public ResponseEntity<String> handleTransactionSystemExceptions(TransactionSystemException transactionSystemException) {
-        System.out.println("tran sys exc: " + transactionSystemException);
-        System.out.println("tran sys exc getm: " + transactionSystemException.getMessage());
-        System.out.println("tran sys exc getLm: " + transactionSystemException.getLocalizedMessage());
-        System.out.println("tran sys exc getC: " + transactionSystemException.getCause());
-        return new ResponseEntity<String>("Incorrect data format", HttpStatus.BAD_REQUEST);
-    }
-
 }

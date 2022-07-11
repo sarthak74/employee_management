@@ -6,6 +6,9 @@ import java.util.concurrent.TimeoutException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,10 +36,11 @@ public class EmployeeController {
     @Autowired
     private RabbitTemplate template;
 
+    private String REDIS_HASH = "REDIS_KEY";
 
     @PostMapping("/addEmployee")
     public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee){
-        employee.setIsDeleted(false);
+        employee.setDeleted(false);
         Employee addedEmployee = service.save(employee);
         return new ResponseEntity<Employee>(addedEmployee, HttpStatus.OK);
     }
@@ -49,7 +53,8 @@ public class EmployeeController {
 
     @GetMapping("/getEmployee/{id}")
     public ResponseEntity<Object> getEmployeeById(@PathVariable String id) throws JsonMappingException, JsonProcessingException{
-        try {    
+        try {
+
             Employee employee = service.getEmp(id);
             if(employee == null){
                 return new ResponseEntity<Object>("No employee with id: " + id, HttpStatus.BAD_REQUEST);
@@ -62,6 +67,7 @@ public class EmployeeController {
         }
     }
 
+
     @GetMapping("/getAllEmployees")
     public ResponseEntity<List<Employee>> getAllEmployees(){
         List<Employee> employees = service.getAll();
@@ -69,7 +75,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/updateEmployee")
-    public ResponseEntity<Object> updateEmployee(@RequestBody Employee employee) throws JsonMappingException, JsonProcessingException{
+    public ResponseEntity<Object> updateEmployee(@RequestBody Employee employee) {
         try {
             
         
@@ -87,7 +93,10 @@ public class EmployeeController {
 
     @DeleteMapping("/deleteEmployee/{id}")
     public ResponseEntity<String> deleteEmployee(@PathVariable String id){
-        String status = service.deleteEmp(id);
+        String status = "No Employee with id: " + id;
+        if(service.deleteEmp(id)){
+            status = "Employee removed with id: " + id;
+        }
         return new ResponseEntity<String>(status, HttpStatus.OK);
     }
 
