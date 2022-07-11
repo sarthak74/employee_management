@@ -1,11 +1,13 @@
 package com.example.employee.controller;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
@@ -39,17 +41,17 @@ public class EmployeeController {
     private String REDIS_HASH = "REDIS_KEY";
 
     @PostMapping("/addEmployee")
-    public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee){
+    public Employee addEmployee(@RequestBody Employee employee){
         employee.setDeleted(false);
         Employee addedEmployee = service.save(employee);
-        return new ResponseEntity<Employee>(addedEmployee, HttpStatus.OK);
+        return addedEmployee;
     }
 
-    @PostMapping("/addMultipleEmployees")
-    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
-        List<Employee> addedEmployees = service.saveAll(employees);
-        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
-    }
+//    @PostMapping("/addMultipleEmployees")
+//    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
+//        List<Employee> addedEmployees = service.saveAll(employees);
+//        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
+//    }
 
     @GetMapping("/getEmployee/{id}")
     public ResponseEntity<Object> getEmployeeById(@PathVariable String id) throws JsonMappingException, JsonProcessingException{

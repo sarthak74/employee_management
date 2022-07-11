@@ -8,8 +8,6 @@ import javax.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.jpa.JpaSystemException;
-import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -33,10 +31,5 @@ public class EmployeeExceptionController {
         return new ResponseEntity<String>("Incorrect Input fields: " + fields, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(JpaSystemException.class)
-    public ResponseEntity<String> handleJPAExceptions(JpaSystemException jpaSystemException){
-        
-        return new ResponseEntity<String>("Bad data format", HttpStatus.BAD_REQUEST);
-    }
 
 }

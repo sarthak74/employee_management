@@ -19,14 +19,10 @@ import org.springframework.data.redis.core.RedisHash;
 @Entity
 @Data
 @NoArgsConstructor
+@RedisHash("employee")
 public class Employee implements Serializable {
     
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator"
-    )
     @Column(name="id", length=36, updatable=false)
     private String id;
     //uuid
