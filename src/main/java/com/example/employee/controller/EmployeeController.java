@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import com.example.employee.kafka.KafkaProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +35,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 public class EmployeeController {
     @Autowired
     private EmployeeService service;
-
-
     private String hash = "employee";
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
     @PostMapping("/addEmployee")
     public Employee addEmployee(@RequestBody Employee employee){
@@ -118,5 +119,11 @@ public class EmployeeController {
             e.printStackTrace();
             return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/updateKafkaEmployee")
+    public ResponseEntity<Object> updateKafkaEmployee(@RequestBody Employee employee) {
+        kafkaProducer.sendMessage("Got Employee id: " + employee.getId());
+        return new ResponseEntity<Object>("Sent to kafka", HttpStatus.OK);
     }
 }

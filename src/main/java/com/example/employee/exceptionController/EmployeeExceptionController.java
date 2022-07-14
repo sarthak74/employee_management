@@ -1,5 +1,6 @@
 package com.example.employee.exceptionController;
 
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
@@ -31,6 +32,11 @@ public class EmployeeExceptionController {
             fields.add((StreamSupport.stream(vio.getPropertyPath().spliterator(), false).reduce((first, second) -> second).orElse(null).toString())); 
         });
         return new ResponseEntity<String>("Incorrect Input fields: " + fields, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConnectException.class)
+    public ResponseEntity<String> handleConnectionException(ConnectException connectException){
+        return new ResponseEntity<String>("Can't connect to servers correctly", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 

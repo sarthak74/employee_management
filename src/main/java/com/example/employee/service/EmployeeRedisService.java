@@ -1,16 +1,10 @@
 package com.example.employee.service;
 
 import com.example.employee.entity.Employee;
-import com.google.gson.Gson;
-import org.omg.CORBA.TIMEOUT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.lang.reflect.Array;
-import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +20,6 @@ public class EmployeeRedisService {
 
     private String redisHash = "employee";
 
-    @Autowired
-    Gson gson;
 
     public void setEmployee(String key, Employee employee){
         template.opsForValue().set(key, employee);
