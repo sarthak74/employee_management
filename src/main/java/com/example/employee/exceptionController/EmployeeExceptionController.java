@@ -18,6 +18,8 @@ import java.util.*;
 public class EmployeeExceptionController {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<String> noElementHandler(NoSuchElementException noSuchElementException){
+        String msg = noSuchElementException.getMessage();
+        System.out.println("no such element found msg: " + msg);
         return new ResponseEntity<String>("No Employee exists with given data", HttpStatus.NOT_FOUND);
     }
 

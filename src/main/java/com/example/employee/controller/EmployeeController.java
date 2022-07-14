@@ -35,10 +35,8 @@ public class EmployeeController {
     @Autowired
     private EmployeeService service;
 
-    @Autowired
-    private RabbitTemplate template;
 
-    private String REDIS_HASH = "REDIS_KEY";
+    private String hash = "employee";
 
     @PostMapping("/addEmployee")
     public Employee addEmployee(@RequestBody Employee employee){
@@ -106,13 +104,12 @@ public class EmployeeController {
     @PostMapping("/updateQueue")
     public ResponseEntity<Object> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
         try {
-            System.out.println("[x] Requesting: " + employee);
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(employee);
-            String updatedEmployee = (String) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, json);
-            Employee updatedEmployeeObject = mapper.readValue(updatedEmployee, Employee.class);
-            System.out.println("updated emp: " + updatedEmployeeObject);
-            if(updatedEmployee == null){
+
+            Employee updatedEmployeeObject = service.updateEmployeeUsingQueue(employee);
+            if(updatedEmployeeObject.getId() == "false"){
+                return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            if(updatedEmployeeObject == null){
                 return new ResponseEntity<Object>("Bad data format or employee does not exist with given id: " + employee.getId(), HttpStatus.BAD_REQUEST);
             }
             

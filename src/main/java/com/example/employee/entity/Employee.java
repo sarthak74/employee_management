@@ -8,6 +8,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -19,10 +20,14 @@ import org.springframework.data.redis.core.RedisHash;
 @Entity
 @Data
 @NoArgsConstructor
-@RedisHash("employee")
 public class Employee implements Serializable {
-    
+
     @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
     @Column(name="id", length=36, updatable=false)
     private String id;
     //uuid
@@ -59,6 +64,6 @@ public class Employee implements Serializable {
                 + ", name=" + name + ", pod=" + pod + ", updatedAt=" + updatedAt + "]";
     }
 
-    
-    
+
+
 }
