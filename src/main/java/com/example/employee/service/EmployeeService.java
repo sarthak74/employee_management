@@ -1,14 +1,17 @@
 package com.example.employee.service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import com.example.employee.config.RabbitmqConfig;
+import com.example.employee.kafka.KafkaProducer;
+import com.example.employee.repository.EmployeeRedisRepo;
+import com.example.employee.rmq.RmqProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.apache.kafka.clients.producer.Callback;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,20 +21,26 @@ import com.example.employee.repository.EmployeeRepository;
 @Service
 public class EmployeeService {
 
+    private static final Logger log = LoggerFactory.getLogger(EmployeeRedisRepo.class);
+    
     @Autowired
     private EmployeeRepository repo;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private RmqProducer rmqProducer;
 
     @Autowired
-    private EmployeeRedisService redisService;
+    private EmployeeRedisRepo redisService;
 
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
     public Employee save(Employee employee){
-        System.out.println("emp service: " + employee);
+        log.info("emp service: " + employee);
         Employee savedEmployee = repo.save(employee);
-        redisService.setEmployee(savedEmployee.getId(), savedEmployee);
+        List<Employee> newEmployeeList = new ArrayList<Employee>();
+        newEmployeeList.add(employee);
+        redisService.setAllEmployees(newEmployeeList);
         return savedEmployee;
     }
 
@@ -43,12 +52,12 @@ public class EmployeeService {
     public List<Employee> getAll(){
         Map<String, Employee> employees = redisService.getAllEmployees();
         if (employees == null || employees.isEmpty()) {
-            System.out.println("getting all emps from db, cache don't have it");
+            log.info("getting all emps from db, cache don't have it");
             List<Employee> allEmployees = repo.findAllEmployees();
             redisService.setAllEmployees(allEmployees);
             return allEmployees;
         } else {
-            System.out.println("got all emps from cache");
+            log.info("got all emps from cache");
             List<Employee> allEmployees = employees.values().stream()
                     .filter(employee -> employee.isDeleted() == false)
                     .collect(Collectors.toList());
@@ -60,12 +69,10 @@ public class EmployeeService {
         try {
             Employee employee = redisService.getEmployee(id);
             if(employee == null){
-                System.out.println("getting emp: " + id + " from db, cache don't have it");
+                log.info("getting emp: " + id + " from db, cache don't have it");
                 employee = repo.findById(id).get();
-                redisService.setEmployee(id, employee);
-            } else {
-                System.out.println("got emp: " + id + " from cache");
-            }
+                redisService.setAnEmployeeToCache(employee.getId(), employee);
+            } else log.info("got emp: " + id + " from cache");
             if (employee == null) return null;
             if (employee.isDeleted()) return null;
             return employee;
@@ -74,75 +81,65 @@ public class EmployeeService {
         }
     }
 
-    public Employee updateEmployee(Employee employee){
-        System.out.println("updating emp id: " + employee.getId());
-        String id = employee.getId();
+    public Employee updateEmployee(Employee employeeUpdatedData){
+        log.info("updating emp id: " + employeeUpdatedData.getId());
+        String id = employeeUpdatedData.getId();
+        Employee employee_to_be_updated = redisService.getEmployee(id);
 
-        Employee prev_employee = redisService.getEmployee(id);
-        if(prev_employee == null){
-            System.out.println("getting emp: " + id + " from db, cache don't have it");
-            prev_employee = repo.findById(id).get();
-            redisService.setEmployee(id, prev_employee);
-        } else {
-            System.out.println("got emp: " + id + " from cache");
-        }
+        if(employee_to_be_updated == null){
+            log.info("getting emp: " + id + " from db, cache don't have it");
+            employee_to_be_updated = repo.findById(id).get();
+        } else log.info("got emp: " + id + " from cache");
 
-        if(prev_employee == null){
-            return null;
-        }
+        if(employee_to_be_updated == null) return null;
+        if(employee_to_be_updated.isDeleted() == true) return null;
 
-        if(prev_employee.isDeleted() == true) {
-            return null;
-        }
-
-        prev_employee.setName(employee.getName());
-        prev_employee.setPod(employee.getPod());
-        prev_employee.setContact(employee.getContact());
-        prev_employee.setAge(employee.getAge());
-
-        redisService.updateEmployee(id, prev_employee);
-        return repo.save(prev_employee);
-
+        employee_to_be_updated = setEmployeeFields(employee_to_be_updated, employeeUpdatedData);
+        repo.save(employee_to_be_updated);
+        redisService.updateEmployee(id, employee_to_be_updated);
+        return employee_to_be_updated;
     }
 
-    public Employee updateEmployeeUsingQueue(Employee employee){
+    public Employee updateEmployeeUsingQueue(Employee employeeUpdatedData){
         try {
-            System.out.println("[x] Requesting: " + employee);
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(employee);
-            String updatedEmployee = (String) rabbitTemplate.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, json);
-            if(updatedEmployee == null) return null;
-            Employee updatedEmployeeObject = mapper.readValue(updatedEmployee, Employee.class);
-            System.out.println("updated emp: " + updatedEmployeeObject);
-            redisService.updateEmployee(employee.getId(), updatedEmployeeObject);
+            Employee updatedEmployeeObject = rmqProducer.sendMessage(employeeUpdatedData);
+            redisService.updateEmployee(employeeUpdatedData.getId(), updatedEmployeeObject);
             return updatedEmployeeObject;
         } catch (Exception e) {
             e.printStackTrace();
-            employee.setId("false");
-            return employee;
+            // below is a way to check about exception in controller class while sending response back to controller class
+            employeeUpdatedData.setId("false");
+            return employeeUpdatedData;
         }
 
+    }
+
+    public Employee updateEmployeeUsingKafka(Employee employee) {
+        kafkaProducer.sendMessage(employee);
+        return employee;
     }
 
     public Boolean deleteEmp(String id){
         Employee prev_employee = redisService.getEmployee(id);
         if(prev_employee == null){
-            System.out.println("getting emp: " + id + " from db, cache don't have it");
+            log.info("getting emp: " + id + " from db, cache don't have it");
             prev_employee = repo.findById(id).get();
-            redisService.setEmployee(id, prev_employee);
-        } else {
-            System.out.println("got emp: " + id + " from cache");
-        }
+        } else log.info("got emp: " + id + " from cache");
         if(prev_employee != null){
-            if(prev_employee.isDeleted() == true){
-                return false;
-            }
+            if(prev_employee.isDeleted() == true) return false;
             prev_employee.setDeleted(true);
-            redisService.deleteKey(id);
             repo.save(prev_employee);
+            redisService.deleteKey(id);
             return true;
         }
-
         return false;
+    }
+
+    public Employee setEmployeeFields(Employee employeeToBeUpdated, Employee newEmployee){
+        if(newEmployee.getName() != null) employeeToBeUpdated.setName(newEmployee.getName());
+        if(newEmployee.getPod() != null) employeeToBeUpdated.setPod(newEmployee.getPod());
+        if(newEmployee.getContact() != null) employeeToBeUpdated.setContact(newEmployee.getContact());
+        if(newEmployee.getAge() != null) employeeToBeUpdated.setAge(newEmployee.getAge());
+        return employeeToBeUpdated;
     }
 }

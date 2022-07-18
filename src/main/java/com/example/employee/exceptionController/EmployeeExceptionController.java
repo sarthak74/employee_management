@@ -36,6 +36,7 @@ public class EmployeeExceptionController {
 
     @ExceptionHandler(ConnectException.class)
     public ResponseEntity<String> handleConnectionException(ConnectException connectException){
+        System.out.println("Exc: " + connectException.getStackTrace());
         return new ResponseEntity<String>("Can't connect to servers correctly", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

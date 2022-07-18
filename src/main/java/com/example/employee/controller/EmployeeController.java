@@ -36,8 +36,7 @@ public class EmployeeController {
     @Autowired
     private EmployeeService service;
     private String hash = "employee";
-    @Autowired
-    private KafkaProducer kafkaProducer;
+
 
     @PostMapping("/addEmployee")
     public Employee addEmployee(@RequestBody Employee employee){
@@ -46,11 +45,11 @@ public class EmployeeController {
         return addedEmployee;
     }
 
-//    @PostMapping("/addMultipleEmployees")
-//    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
-//        List<Employee> addedEmployees = service.saveAll(employees);
-//        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
-//    }
+    @PostMapping("/addMultipleEmployees")
+    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
+        List<Employee> addedEmployees = service.saveAll(employees);
+        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
+    }
 
     @GetMapping("/getEmployee/{id}")
     public ResponseEntity<Object> getEmployeeById(@PathVariable String id) throws JsonMappingException, JsonProcessingException{
@@ -123,7 +122,12 @@ public class EmployeeController {
 
     @PostMapping("/updateKafkaEmployee")
     public ResponseEntity<Object> updateKafkaEmployee(@RequestBody Employee employee) {
-        kafkaProducer.sendMessage("Got Employee id: " + employee.getId());
-        return new ResponseEntity<Object>("Sent to kafka", HttpStatus.OK);
+        try {
+            service.updateEmployeeUsingKafka(employee);
+            return new ResponseEntity<Object>("Sent to kafka", HttpStatus.OK);
+        } catch (Exception e){
+            e.printStackTrace();
+            return new ResponseEntity<Object>("Some Exception occurred", HttpStatus.BAD_REQUEST);
+        }
     }
 }
