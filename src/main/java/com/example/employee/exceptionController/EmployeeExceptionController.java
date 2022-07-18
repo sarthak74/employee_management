@@ -1,5 +1,6 @@
 package com.example.employee.exceptionController;
 
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
@@ -18,6 +19,8 @@ import java.util.*;
 public class EmployeeExceptionController {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<String> noElementHandler(NoSuchElementException noSuchElementException){
+        String msg = noSuchElementException.getMessage();
+        System.out.println("no such element found msg: " + msg);
         return new ResponseEntity<String>("No Employee exists with given data", HttpStatus.NOT_FOUND);
     }
 
@@ -29,6 +32,12 @@ public class EmployeeExceptionController {
             fields.add((StreamSupport.stream(vio.getPropertyPath().spliterator(), false).reduce((first, second) -> second).orElse(null).toString())); 
         });
         return new ResponseEntity<String>("Incorrect Input fields: " + fields, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConnectException.class)
+    public ResponseEntity<String> handleConnectionException(ConnectException connectException){
+        System.out.println("Exc: " + connectException.getStackTrace());
+        return new ResponseEntity<String>("Can't connect to servers correctly", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 

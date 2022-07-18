@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import com.example.employee.kafka.KafkaProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +35,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 public class EmployeeController {
     @Autowired
     private EmployeeService service;
+    private String hash = "employee";
 
-    @Autowired
-    private RabbitTemplate template;
-
-    private String REDIS_HASH = "REDIS_KEY";
 
     @PostMapping("/addEmployee")
     public Employee addEmployee(@RequestBody Employee employee){
@@ -47,11 +45,11 @@ public class EmployeeController {
         return addedEmployee;
     }
 
-//    @PostMapping("/addMultipleEmployees")
-//    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
-//        List<Employee> addedEmployees = service.saveAll(employees);
-//        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
-//    }
+    @PostMapping("/addMultipleEmployees")
+    public ResponseEntity<List<Employee>> addMultipleEmployees(@RequestBody List<Employee> employees){
+        List<Employee> addedEmployees = service.saveAll(employees);
+        return new ResponseEntity<List<Employee>>(addedEmployees, HttpStatus.OK);
+    }
 
     @GetMapping("/getEmployee/{id}")
     public ResponseEntity<Object> getEmployeeById(@PathVariable String id) throws JsonMappingException, JsonProcessingException{
@@ -106,13 +104,12 @@ public class EmployeeController {
     @PostMapping("/updateQueue")
     public ResponseEntity<Object> queue(@RequestBody Employee employee) throws IOException, TimeoutException, InterruptedException{
         try {
-            System.out.println("[x] Requesting: " + employee);
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(employee);
-            String updatedEmployee = (String) template.convertSendAndReceive(RabbitmqConfig.Exchange, RabbitmqConfig.RoutingKey, json);
-            Employee updatedEmployeeObject = mapper.readValue(updatedEmployee, Employee.class);
-            System.out.println("updated emp: " + updatedEmployeeObject);
-            if(updatedEmployee == null){
+
+            Employee updatedEmployeeObject = service.updateEmployeeUsingQueue(employee);
+            if(updatedEmployeeObject.getId() == "false"){
+                return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            if(updatedEmployeeObject == null){
                 return new ResponseEntity<Object>("Bad data format or employee does not exist with given id: " + employee.getId(), HttpStatus.BAD_REQUEST);
             }
             
@@ -120,6 +117,17 @@ public class EmployeeController {
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<Object>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/updateKafkaEmployee")
+    public ResponseEntity<Object> updateKafkaEmployee(@RequestBody Employee employee) {
+        try {
+            service.updateEmployeeUsingKafka(employee);
+            return new ResponseEntity<Object>("Sent to kafka", HttpStatus.OK);
+        } catch (Exception e){
+            e.printStackTrace();
+            return new ResponseEntity<Object>("Some Exception occurred", HttpStatus.BAD_REQUEST);
         }
     }
 }
