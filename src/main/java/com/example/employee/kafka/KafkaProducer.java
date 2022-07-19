@@ -2,32 +2,20 @@ package com.example.employee.kafka;
 
 import com.example.employee.entity.Employee;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
-import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Service;
-import org.springframework.util.concurrent.ListenableFutureCallback;
-
-import java.util.Properties;
 
 @Service
 public class KafkaProducer {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaProducer.class);
+    @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
     private ObjectMapper mapper = new ObjectMapper();;
-
-    public KafkaProducer(KafkaTemplate<String, String> kafkaTemplate){
-        this.kafkaTemplate = kafkaTemplate;
-    }
 
     public String getMessage(Employee employee){
         try {
@@ -39,18 +27,15 @@ public class KafkaProducer {
         }
     }
 
-    public void sendMessage(Employee employee){
-        String message = getMessage(employee);
-        log.info(String.format("[x] Sending Kafka request. Msg: " + message));
-        kafkaTemplate.send("firstTopic", message).addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
-            @Override
-            public void onSuccess(final SendResult<String, String> message) {
-                log.info("Message sent successfully\nMetadata: " + message.getRecordMetadata());
-            }
-            @Override
-            public void onFailure(final Throwable throwable) {
-                log.info("Message sending failed: " + message, throwable);
-            }
-        });
+    public Boolean sendMessage(Employee employee){
+        try {
+            String message = getMessage(employee);
+            log.info(String.format("[x] Sending Kafka request. Msg: " + message));
+            kafkaTemplate.send("firstTopic", message);
+            return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
     }
 }
