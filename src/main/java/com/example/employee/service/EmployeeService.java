@@ -51,13 +51,13 @@ public class EmployeeService {
 
     public List<Employee> getAll(){
         Map<String, Employee> employees = redisService.getAllEmployees();
+
         if (employees == null || employees.isEmpty()) {
             log.info("getting all emps from db, cache don't have it");
             List<Employee> allEmployees = repo.findAllEmployees();
             redisService.setAllEmployees(allEmployees);
             return allEmployees;
         } else {
-            log.info("got all emps from cache");
             List<Employee> allEmployees = employees.values().stream()
                     .filter(employee -> employee.isDeleted() == false)
                     .collect(Collectors.toList());
@@ -114,9 +114,8 @@ public class EmployeeService {
 
     }
 
-    public Employee updateEmployeeUsingKafka(Employee employee) {
-        kafkaProducer.sendMessage(employee);
-        return employee;
+    public Boolean updateEmployeeUsingKafka(Employee employee) {
+        return kafkaProducer.sendMessage(employee);
     }
 
     public Boolean deleteEmp(String id){

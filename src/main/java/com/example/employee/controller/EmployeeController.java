@@ -123,11 +123,12 @@ public class EmployeeController {
     @PostMapping("/updateKafkaEmployee")
     public ResponseEntity<Object> updateKafkaEmployee(@RequestBody Employee employee) {
         try {
-            service.updateEmployeeUsingKafka(employee);
-            return new ResponseEntity<Object>("Sent to kafka", HttpStatus.OK);
+            Boolean isSent = service.updateEmployeeUsingKafka(employee);
+            if(isSent) return new ResponseEntity<Object>("Update request received!", HttpStatus.OK);
+            else return new ResponseEntity<Object>("Request could not be processed!", HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             e.printStackTrace();
-            return new ResponseEntity<Object>("Some Exception occurred", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<Object>("Internal Server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

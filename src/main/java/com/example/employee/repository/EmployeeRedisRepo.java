@@ -49,11 +49,13 @@ public class EmployeeRedisRepo {
     public Map<String, Employee> getAllEmployees(){
         Map<String, Employee> allEmployees = (Map<String, Employee>) template.opsForValue().get(allEmployeesKey);
         if (allEmployees == null) {
+            log.info("getting employees from db");
             List<Employee> allSavedEmployeesList = repo.findAllEmployees();
             Map<String, Employee> allSavedEmployeesMap = new HashMap<String, Employee>();
             allSavedEmployeesList.stream().forEach(employee -> allSavedEmployeesMap.put(employee.getId(), employee));
             allEmployees = allSavedEmployeesMap;
-        }
+            template.opsForValue().set(allEmployeesKey, allEmployees);
+        } else log.info("getting employees from cache");
         return allEmployees;
     }
 
